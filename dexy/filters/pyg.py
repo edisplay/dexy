@@ -22,8 +22,12 @@ file_ext_to_lexer_alias_cache = {
         }
 
 # Add all pygments standard mappings.
-for module_name, name, aliases, file_extensions, _ in list(PYGMENTS_LEXERS.values()):
-    alias = aliases[0]
+for module_name, name, alias_or_aliases, file_extensions, mime_types in list(PYGMENTS_LEXERS.values()):
+    try:
+        alias = alias_or_aliases[0]
+    except IndexError:
+        alias = alias_or_aliases
+
     for ext in file_extensions:
         ext = ext.lstrip("*")
         file_ext_to_lexer_alias_cache[ext] = alias
