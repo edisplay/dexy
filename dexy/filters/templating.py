@@ -117,7 +117,7 @@ class JinjaFilter(TemplateFilter):
             'filters' : (
                 "List of template plugins to make into jinja filters.",
                 ['assertions', 'highlight', 'head', 'tail', 'rstcode', 'stripjavadochtml',
-                    'replacejinjafilters', 'bs4']
+                    'replacejinjafilters', 'bs4', 'markdown']
                 )
             }
 

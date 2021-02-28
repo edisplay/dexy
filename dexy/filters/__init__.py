@@ -5,6 +5,7 @@ import dexy.filters.asciidoctor
 import dexy.filters.aws
 import dexy.filters.confluence
 import dexy.filters.deprecated
+import dexy.filters.drupal
 import dexy.filters.easy
 import dexy.filters.example
 import dexy.filters.fluid_html

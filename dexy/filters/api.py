@@ -30,7 +30,7 @@ class ApiFilter(dexy.filter.DexyFilter):
 
     _settings = {
             # Files to hold collections of API keys
-            'master-api-key-file' : ("Master API key file for user.", "~/.dexyapis"),
+            'user-api-key-file' : ("API key file for user.", "~/.dexyapis"),
             'project-api-key-file' : ("API key file for project.", ".dexyapis"),
 
             # Parameters to be stored in collection files
@@ -39,6 +39,7 @@ class ApiFilter(dexy.filter.DexyFilter):
             'api-url' : ("The url of the API endpoint.", None),
 
             # Files to hold info about a single document
+            'document-config-required' : True,
             'document-api-config-file' : ('Filename to store config for a file (can only have 1 per directory, dexy looks for suffix format first.', None),
             'document-api-config-postfix' : ('Suffix to attach to content filename to indicate this is the config for that file.', '-config.json'),
 
@@ -46,10 +47,10 @@ class ApiFilter(dexy.filter.DexyFilter):
             }
 
     def api_key_locations(self):
-        return [self.setting('project-api-key-file'), self.setting('master-api-key-file')]
+        return [self.setting('project-api-key-file'), self.setting('user-api-key-file')]
 
     def docmd_create_keyfile(self):
-        return self.create_keyfile('master-api-key-file')
+        return self.create_keyfile('user-api-key-file')
 
     def create_keyfile(self, keyfilekey):
         """
@@ -74,26 +75,52 @@ class ApiFilter(dexy.filter.DexyFilter):
         with open(key_filename, "w") as f:
             json.dump(keyfile_content, f, sort_keys = True, indent=4)
 
-    def document_config_file(self):
+    def document_config_file(self, exists_already=True):
         postfix_config_filename = "%s%s" % (os.path.splitext(self.output_data.name)[0], self.setting('document-api-config-postfix'))
+
+        if self.setting('document-api-config-file'):
+            dir_based_config_filename = os.path.join(self.output_data.parent_dir(), self.setting('document-api-config-file'))
+        else:
+            dir_based_config_filename = None
+
         if file_exists(postfix_config_filename):
             return postfix_config_filename
-        else:
-            return os.path.join(self.output_data.parent_dir(), self.setting('document-api-config-file'))
+        elif dir_based_config_filename and file_exists(dir_based_config_filename):
+            return dir_based_config_filename
+        elif not exists_already:
+            return postfix_config_filename
+
 
     def read_document_config(self):
         document_config = self.document_config_file()
-        if file_exists(document_config):
+        if document_config and file_exists(document_config):
             with open(document_config, "r") as f:
                 return json.load(f)
-        else:
+        elif self.setting('document-config-required'):
             msg = "Filter %s needs a file %s, couldn't find it."
             raise dexy.exceptions.UserFeedback(msg % (self.alias, document_config))
+        else:
+            return {}
 
     def save_document_config(self, config):
-        document_config = self.document_config_file()
+        document_config = self.document_config_file(exists_already=False)
         with open(document_config, "w") as f:
             json.dump(config, f, sort_keys=True, indent=4)
+
+    def write_params(self, params):
+        api_key_name = self.setting('api-key-name')
+
+        location = self.setting('project-api-key-file')
+        if file_exists(location):
+            with open(location, 'r') as f:
+                existing_config = json.load(f)
+        else:
+            existing_config = {api_key_name : {}}
+
+        existing_config[api_key_name].update(params)
+
+        with open(location, 'w') as f:
+            json.dump(existing_config, f, indent=4, sort_keys=True)
 
     def read_param(self, param_name, default=False):
         param_value = None

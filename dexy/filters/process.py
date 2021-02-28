@@ -435,6 +435,7 @@ class SubprocessCompileInputFilter(SubprocessCompileFilter):
         if len(inputs) == 1:
             doc = inputs[0]
             for section_name, section_input in doc.output_data().items():
+                self.log_debug("processing input %s" % section_input)
                 proc, stdout = self.run_command(command, self.setup_env(), section_input)
                 self.handle_subprocess_proc_return(command, proc.returncode, stdout)
                 self.output_data[section_name] = stdout
